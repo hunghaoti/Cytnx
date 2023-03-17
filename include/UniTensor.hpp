@@ -2415,19 +2415,22 @@ namespace cytnx {
 
     //@{
     /**
-    @brief Initialize a UniTensor with cytnx::Tensor.
-    @param in_tensor a cytnx::Tensor
-    @param is_diag if the current UniTensor is a diagonal Tensor. This will requires input of Tensor
-    to be 1D.
-    @param rowrank the rowrank of the outcome UniTensor.
+    @brief Construct a UniTensor from cytnx::Tensor.
+    @param[in] in_tensor a cytnx::Tensor
+    @param[in] is_diag if the current UniTensor is a diagonal Tensor. 
+	    This will requires input of Tensor to be 1D.
+    @param[in] rowrank the rowrank of the outcome UniTensor.
 
-    [Note]
-        1. The constructed UniTensor will have same rank as the input Tensor, with default labels,
-    and a shared view (shared instance) of interal block as the input Tensor.
+    @note
+        1. The constructed UniTensor will have same rank as the input Tensor, with 
+		   default labels, and a shared view (shared instance) of interal block as 
+		   the input Tensor.
         2. The constructed UniTensor is always untagged.
-        3. [Important] The internal block of UniTensor is a referece of input Tensor. That is, they
-    share the same memory. All the change afterward on UniTensor block will change in input Tensor
-    as well. Use Tensor.clone() if a shared view is not the case.
+    @attention 
+	    The internal block of UniTensor is a referece of input Tensor. That is, they
+        share the same memory. All the change afterward on UniTensor block will 
+		change in input Tensor as well. Use Tensor.clone() if a shared view is not 
+		the case.
 
     ## Example:
     ### c++ API:
@@ -2445,6 +2448,27 @@ namespace cytnx {
         : _impl(new UniTensor_base()) {
       this->Init(in_tensor, is_diag, rowrank);
     }
+    /**
+    @brief Initialize a UniTensor from cytnx::Tensor.
+    @param[in] in_tensor a cytnx::Tensor
+    @param[in] is_diag if the current UniTensor is a diagonal Tensor. 
+	    This will requires input of Tensor to be 1D.
+    @param[in] rowrank the rowrank of the outcome UniTensor.
+
+    @note
+        1. The constructed UniTensor will have same rank as the input Tensor, with 
+		   default labels, and a shared view (shared instance) of interal block as 
+		   the input Tensor.
+        2. The constructed UniTensor is always untagged.
+    @attention 
+	    The internal block of UniTensor is a referece of input Tensor. That is, they
+        share the same memory. All the change afterward on UniTensor block will 
+		change in input Tensor as well. Use Tensor.clone() if a shared view is not 
+		the case.
+	@see
+    UniTensor(const Tensor &in_tensor, const bool &is_diag,
+              const cytnx_int64 &rowrank)
+    */
     void Init(const Tensor &in_tensor, const bool &is_diag = false,
               const cytnx_int64 &rowrank = -1) {
       //std::cout << "[entry!]" << std::endl;
@@ -2456,22 +2480,23 @@ namespace cytnx {
 
     //@{
     /**
-    @brief Initialize a UniTensor.
-    @param bonds the bond list. when init, each bond will be copy( not a shared view of bond object
-    with input bond)
-    @param in_labels the labels for each rank(bond)
-    @param rowrank the rank of physical row space.
-    @param dtype the dtype of the UniTensor. It can be any type defined in cytnx::Type.
-    @param device the device that the UniTensor is put on. It can be any device defined in
-    cytnx::Device.
+    @brief Construct a UniTensor.
+    @param[in] bonds the bond list. Each bond will be deep copy (not a shared view of 
+	    bond object with input bond.)
+    @param[in] in_labels the labels for each rank(bond)
+    @param[in] rowrank the rank of physical row space.
+    @param[in] dtype the dtype of the UniTensor. It can be any type defined in 
+	    cytnx::Type.
+    @param[in] device the device that the UniTensor is put on. It can be any device defined in
+        cytnx::Device.
     @param is_diag if the constructed UniTensor is a diagonal UniTensor.
-        This can only be assigned true when the UniTensor is square, untagged and rank-2 UniTensor.
+        This can only be assigned true when the UniTensor is square, untagged and rank-2 
+		UniTensor.
 
-    [Note]
+    \pre
         1. the bonds cannot contain simutaneously untagged bond(s) and tagged bond(s)
-        2. If the bonds are with symmetry (qnums), the symmetry types should be the same across all
-    the bonds.
-
+        2. If the bonds are with symmetry (qnums), the symmetry types should be the same 
+		across all the bonds.
     */
     UniTensor(const std::vector<Bond> &bonds, const std::vector<std::string> &in_labels = {},
               const cytnx_int64 &rowrank = -1, const unsigned int &dtype = Type.Double,
@@ -2488,16 +2513,13 @@ namespace cytnx {
       this->Init(bonds, in_labels, rowrank, dtype, device, is_diag);
     }
     /**
-     * @brief Construct a new Uni Tensor object
-     *
      * @deprecated
-     *
-     * @param bonds
-     * @param in_labels
-     * @param rowrank
-     * @param dtype
-     * @param device
-     * @param is_diag
+     *  This function is deprecated, please use \n
+     *  UniTensor(const std::vector<Bond> &bonds, 
+	 *            const std::vector<std::string> &in_labels,
+     *            const cytnx_int64 &rowrank, const unsigned int &dtype,
+     *            const int &device, const bool &is_diag)\n
+	 *  instead.
      */
     UniTensor(const std::vector<Bond> &bonds, const std::vector<cytnx_int64> &in_labels,
               const cytnx_int64 &rowrank = -1, const unsigned int &dtype = Type.Double,
@@ -2560,16 +2582,13 @@ namespace cytnx {
       this->_impl->Init(bonds, in_labels, rowrank, dtype, device, is_diag, false);
     }
     /**
-     * @brief
-     *
      * @deprecated
-     *
-     * @param bonds
-     * @param in_labels
-     * @param rowrank
-     * @param dtype
-     * @param device
-     * @param is_diag
+	 *   This function is deprecated. Please use \n
+     *   void Init(const std::vector<Bond> &bonds, 
+	 *             const std::vector<std::string> &in_labels, 
+	 *             const cytnx_int64 &rowrank, const unsigned int &dtype,
+	 *             const int &device = Device.cpu, const bool &is_diag)\n
+	 *   instead.
      */
     void Init(const std::vector<Bond> &bonds, const std::vector<cytnx_int64> &in_labels,
               const cytnx_int64 &rowrank = -1, const unsigned int &dtype = Type.Double,
@@ -2584,8 +2603,7 @@ namespace cytnx {
 
     /**
     @brief set the name of the UniTensor
-    @param in the name. It should be a string.
-
+    @param[in] in the name. It should be a string.
     */
     UniTensor &set_name(const std::string &in) {
       this->_impl->set_name(in);
@@ -2594,10 +2612,10 @@ namespace cytnx {
     /**
     @deprecated
     @brief set a new label for bond at the assigned index.
-    @param idx the index of the bond.
-    @param new_label the new label that is assign to the bond.
+    @param[in] idx the index of the bond.
+    @param[in] new_label the new label that is assign to the bond.
 
-    [Note]
+    @note
         the new assign label cannot be the same as the label of any other bonds in the UniTensor.
         ( cannot have duplicate labels )
 
@@ -2613,7 +2631,7 @@ namespace cytnx {
     @param idx the index of the bond.
     @param new_label the new label that is assign to the bond.
 
-    [Note]
+    @note
         the new assign label cannot be the same as the label of any other bonds in the UniTensor.
         ( cannot have duplicate labels )
 
@@ -2627,7 +2645,7 @@ namespace cytnx {
     @param idx the index of the bond.
     @param new_label the new label that is assign to the bond.
 
-    [Note]
+    @note
         the new assign label cannot be the same as the label of any other bonds in the UniTensor.
         ( cannot have duplicate labels )
 
@@ -2647,7 +2665,7 @@ namespace cytnx {
     @param old_label the current label of the bond.
     @param new_label the new label that is assign to the bond.
 
-    [Note]
+    @note
         the new assign label cannot be the same as the label of any other bonds in the UniTensor.
         ( cannot have duplicate labels )
 
@@ -2675,10 +2693,10 @@ namespace cytnx {
 
     /**
     @brief change a new label for bond with original label.
-    @param old_lbl the original label of the bond that to be replaced.
-    @param new_label the new label that is assign to replace the original label.
+    @param[in] old_lbl the original label of the bond that to be replaced.
+    @param[in] new_label the new label that is assign to replace the original label.
 
-    [Note]
+    @note
         the new assign label cannot be the same as the label of any other bonds in the UniTensor.
         ( cannot have duplicate labels )
 
@@ -2693,9 +2711,9 @@ namespace cytnx {
     /**
     @deprecated
     @brief set new labels for all the bonds.
-    @param new_labels the new labels for each bond.
+    @param[in] new_labels the new labels for each bond.
 
-    [Note]
+    @note
         the new assign labels cannot have duplicate element(s), and should have the same size as the
     rank of UniTensor.
 
@@ -2706,9 +2724,9 @@ namespace cytnx {
     }
     /**
     @brief set new labels for all the bonds.
-    @param new_labels the new labels for each bond.
+    @param[in] new_labels the new labels for each bond.
 
-    [Note]
+    @note
         the new assign labels cannot have duplicate element(s), and should have the same size as the
     rank of UniTensor.
 
@@ -2753,14 +2771,56 @@ namespace cytnx {
     }
 
     cytnx_uint64 Nblocks() const { return this->_impl->Nblocks(); }
+	/**
+	 *@brief Get the rank of the UniTensor.
+	 *@return cytnx_uint64 the rank of the UniTensor
+	 */
     cytnx_uint64 rank() const { return this->_impl->rank(); }
+	/**
+	 *@brief Get the rowrank of the UniTensor.
+	 *@return cytnx_uint64 the rowrank of the UniTensor
+	 */
     cytnx_uint64 rowrank() const { return this->_impl->rowrank(); }
+	/**
+	 *@brief Get the data type of the UniTensor.
+	 *@return unsigned int the dtype_id(@ref:Type) of the UniTensor
+	 *@see dtype_str()
+	 */
     unsigned int dtype() const { return this->_impl->dtype(); }
+	/**
+	 *@brief Get the UniTensor type of the UniTensor.
+	 *@return int the uten_type_id of the UniTensor
+	 *@see uten_type_str()
+	 */
     int uten_type() const { return this->_impl->uten_type(); }
+	/**
+	 *@brief Get the device of the UniTensor.
+	 *@return int the device_id(@ref:Device) of the UniTensor
+	 *@see device_str()
+	 */
     int device() const { return this->_impl->device(); }
+	/**
+	 *@brief Get the name of the UniTensor.
+	 *@return std::string the name of the UniTensor
+	 */
     std::string name() const { return this->_impl->name(); }
+	/**
+	 *@brief Get the data type of the UniTensor in string form.
+	 *@return string the data type(@ref Type) of the UniTensor
+	 *@see dtype()
+	 */
     std::string dtype_str() const { return this->_impl->dtype_str(); }
+	/**
+	 *@brief Get the device of the UniTensor in string form.
+	 *@return string the device(@ref Device) of the UniTensor
+	 *@see device()
+	 */
     std::string device_str() const { return this->_impl->device_str(); }
+	/**
+	 *@brief Get the UniTensor type of the UniTensor in string form.
+	 *@return int the uten_type_id of the UniTensor
+	 *@see uten_type()
+	 */
     std::string uten_type_str() const { return this->_impl->uten_type_str(); }
     bool is_contiguous() const { return this->_impl->is_contiguous(); }
     bool is_diag() const { return this->_impl->is_diag(); }
