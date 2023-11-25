@@ -193,12 +193,14 @@ namespace cytnx {
 
     void _svd_Block_UT(std::vector<cytnx::UniTensor> &outCyT, const cytnx::UniTensor &Tin,
                        const bool &compute_uv) {
+	  std::cout << "start block" << std::endl;
       // outCyT must be empty and Tin must be checked with proper rowrank!
 
       // 1) getting the combineBond L and combineBond R for qnum list without grouping:
       //
       //   BDLeft -[ ]- BDRight
       //
+	  std::cout << "=============step 1==============" << std::endl;
       std::vector<cytnx_uint64> strides;
       strides.reserve(Tin.rank());
       auto BdLeft = Tin.bonds()[0].clone();
@@ -219,6 +221,7 @@ namespace cytnx {
 
       // 2) making new inner_to_outer_idx lists for each block:
       // -> a. get stride:
+	  std::cout << "=============step 2==============" << std::endl;
       for (int i = Tin.rowrank() - 2; i >= 0; i--) {
         strides[i] *= strides[i + 1];
       }
@@ -243,6 +246,7 @@ namespace cytnx {
 
       // 3) categorize:
       // key = qnum, val = list of block locations:
+	  std::cout << "=============step 3==============" << std::endl;
       std::map<std::vector<cytnx_int64>, std::vector<cytnx_int64>> mgrp;
       for (cytnx_uint64 b = 0; b < Tin.Nblocks(); b++) {
         mgrp[BdLeft.qnums()[new_itoi[b][0]]].push_back(b);
@@ -250,6 +254,7 @@ namespace cytnx {
 
       // 4) for each qcharge in key, combining the blocks into a big chunk!
       // ->a initialize an empty shell of UniTensor!
+	  std::cout << "=============step 4==============" << std::endl;
       vec2d<cytnx_int64> aux_qnums;  // for sharing bond
       std::vector<cytnx_uint64> aux_degs;  // forsharing bond
       std::vector<Tensor> S_blocks;
@@ -296,6 +301,7 @@ namespace cytnx {
         S_blocks.push_back(out[0]);
         tr = 1;
 
+	  std::cout << "=============step 5==============" << std::endl;
         if (compute_uv) {
           // std::cout << row_szs << std::endl;
           // std::cout << out[tr].shape() << std::endl;
@@ -357,6 +363,7 @@ namespace cytnx {
       }
 
       // process S:
+	  std::cout << "=============step 6==============" << std::endl;
       Bond Bd_aux = Bond(BD_IN, aux_qnums, aux_degs, Tin.syms());
       BlockUniTensor *S_ptr = new BlockUniTensor();
       S_ptr->Init({Bd_aux, Bd_aux.redirect()}, {"_aux_L", "_aux_R"}, 1, Type.Double,
@@ -405,6 +412,7 @@ namespace cytnx {
         vT._impl = boost::intrusive_ptr<UniTensor_base>(vT_ptr);
         outCyT.push_back(vT);
       }
+	  std::cout << "end block" << std::endl;
 
     }  // _svd_Block_UT
 

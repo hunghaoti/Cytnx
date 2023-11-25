@@ -387,7 +387,9 @@ namespace SvdTest {
     UniTensor ans_T = UniTensor::Load(ans_file_name);  // sigular values UniTensor
 
     // Do svd
+	std::cout << "start test" << std::endl;
     std::vector<UniTensor> svds = linalg::Svd(src_T, compute_uv = true);
+	std::cout << "end test" << std::endl;
 
     // check labels
     if (!(CheckLabels(src_T, svds))) {
