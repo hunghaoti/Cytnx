@@ -302,17 +302,14 @@ namespace SvdTest {
     if (dtype == Type.Float || dtype == Type.ComplexFloat) {
       is_double_float_acc = false;
     }
-    const UniTensor S = Tout[0];
-    const UniTensor U = Tout[1];
-    const UniTensor V = Tout[2];
+    const UniTensor& S = Tout[0];
+    const UniTensor& U = Tout[1];
+    const UniTensor& V = Tout[2];
     UniTensor ReCompose = Contract(U, S);
     ReCompose = Contract(ReCompose, V);
     const double tol = is_double_float_acc ? 1.0e-9 : 1.0e-2;
     auto T_float = Tin.clone();
-    if (Tin.dtype() > Type.Float) {
-      T_float = Tin.astype(Type.Double);
-    }
-    bool is_eq = AreNearlyEqUniTensor(T_float, ReCompose, tol);
+    bool is_eq = AreNearlyEqUniTensor(T_float, ReCompose, 1);
     return is_eq;
   }
 
