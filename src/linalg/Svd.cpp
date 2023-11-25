@@ -266,6 +266,102 @@ namespace cytnx {
       std::vector<Tensor> vT_blocks;
 
       int tr;
+      for (auto const &x : mgrp) {
+        vec2d<cytnx_uint64> itoi_indicators(x.second.size());
+        // cout << x.second.size() << "-------" << endl;
+        for (int i = 0; i < x.second.size(); i++) {
+          itoi_indicators[i] = new_itoi[x.second[i]];
+          // std::cout << new_itoi[x.second[i]] << std::endl;
+        }
+        auto order = vec_sort(itoi_indicators, true);
+        std::vector<Tensor> Tlist(itoi_indicators.size());
+        std::vector<cytnx_int64> row_szs(order.size(), 1);
+        cytnx_uint64 Rblk_dim = 0;
+        cytnx_int64 tmp = -1;
+        for (int i = 0; i < order.size(); i++) {
+          if (itoi_indicators[i][0] != tmp) {
+            tmp = itoi_indicators[i][0];
+            Rblk_dim++;
+          }
+          Tlist[i] = Tin.get_blocks_()[x.second[order[i]]];
+          for (int j = 0; j < Tin.rowrank(); j++) {
+            row_szs[i] *= Tlist[i].shape()[j];
+          }
+          Tlist[i] = Tlist[i].reshape({row_szs[i], -1});
+        }
+        cytnx_error_msg(Tlist.size() % Rblk_dim, "[Internal ERROR] Tlist is not complete!%s", "\n");
+        // BTen is the big block!!
+        cytnx_uint64 Cblk_dim = Tlist.size() / Rblk_dim;
+        Tensor BTen = algo::_fx_Matric_combine(Tlist, Rblk_dim, Cblk_dim);
+
+        // Now we can perform linalg!
+        aux_qnums.push_back(x.first);
+        auto out = linalg::Svd(BTen, compute_uv);
+        aux_degs.push_back(out[0].shape()[0]);
+        S_blocks.push_back(out[0]);
+        tr = 1;
+
+	  std::cout << "=============step 5==============" << std::endl;
+        if (compute_uv) {
+          // std::cout << row_szs << std::endl;
+          // std::cout << out[tr].shape() << std::endl;
+          std::vector<cytnx_uint64> split_dims;
+          for (int i = 0; i < Rblk_dim; i++) {
+            split_dims.push_back(row_szs[i * Cblk_dim]);
+          }
+          std::vector<Tensor> blks;
+          algo::Vsplit_(blks, out[tr], split_dims);
+          out[tr] = Tensor();
+          std::vector<cytnx_int64> new_shape(Tin.rowrank() + 1);
+          new_shape.back() = -1;
+          for (int ti = 0; ti < blks.size(); ti++) {
+            U_blocks.push_back(blks[ti]);
+            U_itoi.push_back(Tin.get_qindices(x.second[order[ti * Cblk_dim]]));
+
+            // reshaping:
+            for (int i = 0; i < Tin.rowrank(); i++) {
+              new_shape[i] =
+                Tin.bonds()[i]
+                  .getDegeneracies()[Tin.get_qindices(x.second[order[ti * Cblk_dim]])[i]];
+            }
+            U_blocks.back().reshape_(new_shape);
+
+            U_itoi.back()[Tin.rowrank()] = S_blocks.size() - 1;
+            U_itoi.back().resize(Tin.rowrank() + 1);
+          }
+          tr++;
+        }  // is_U
+
+        if (compute_uv) {
+          std::vector<cytnx_uint64> split_dims;
+          for (int i = 0; i < Cblk_dim; i++) {
+            split_dims.push_back(Tlist[i].shape().back());
+          }
+          std::vector<Tensor> blks;
+          algo::Hsplit_(blks, out[tr], split_dims);
+          out[tr] = Tensor();
+
+          std::vector<cytnx_int64> new_shape(Tin.rank() - Tin.rowrank() + 1);
+          new_shape[0] = -1;
+          for (int ti = 0; ti < blks.size(); ti++) {
+            vT_blocks.push_back(blks[ti]);
+            auto &tpitoi = Tin.get_qindices(x.second[order[ti]]);
+            vT_itoi.push_back({S_blocks.size() - 1});
+            for (int i = Tin.rowrank(); i < Tin.rank(); i++) {
+              vT_itoi.back().push_back(tpitoi[i]);
+            }
+
+            // reshaping:
+            for (int i = Tin.rowrank(); i < Tin.rank(); i++) {
+              new_shape[i - Tin.rowrank() + 1] = Tin.bonds()[i].getDegeneracies()[tpitoi[i]];
+            }
+            vT_blocks.back().reshape_(new_shape);
+          }
+
+          tr++;
+        }  // is_vT
+      }
+
       // process S:
 	  std::cout << "=============step 6==============" << std::endl;
       Bond Bd_aux = Bond(BD_IN, aux_qnums, aux_degs, Tin.syms());
