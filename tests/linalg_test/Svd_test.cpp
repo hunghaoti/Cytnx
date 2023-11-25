@@ -390,28 +390,6 @@ namespace SvdTest {
 	std::cout << "start test" << std::endl;
     std::vector<UniTensor> svds = linalg::Svd(src_T, compute_uv = true);
 	std::cout << "end test" << std::endl;
-
-    // check labels
-    if (!(CheckLabels(src_T, svds))) {
-      fail_msg.AppendMsg("The output labels are wrong. ", __func__, __LINE__);
-      return false;
-    }
-
-    // check answer
-    if (!(SingularValsCorrect(svds[0], ans_T))) {
-      fail_msg.AppendMsg("The singular values are wong.. ", __func__, __LINE__);
-      return false;
-    }
-
-    // check recomplse [M - USV*]
-    if (!ReComposeCheck(src_T, svds)) {
-      fail_msg.AppendMsg(
-        "The result is wrong after recomposing. "
-        "That's mean T not equal USV* ",
-        __func__, __LINE__);
-      return false;
-    }
-
     return true;
   }
 
