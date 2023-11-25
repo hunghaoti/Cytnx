@@ -194,6 +194,129 @@ namespace cytnx {
     void _svd_Block_UT(std::vector<cytnx::UniTensor> &outCyT, const cytnx::UniTensor &Tin,
                        const bool &compute_uv) {
 	  std::cout << "start block" << std::endl;
+      // outCyT must be empty and Tin must be checked with proper rowrank!
+
+      // 1) getting the combineBond L and combineBond R for qnum list without grouping:
+      //
+      //   BDLeft -[ ]- BDRight
+      //
+	  std::cout << "=============step 1==============" << std::endl;
+      std::vector<cytnx_uint64> strides;
+      strides.reserve(Tin.rank());
+      auto BdLeft = Tin.bonds()[0].clone();
+      for (int i = 1; i < Tin.rowrank(); i++) {
+        strides.push_back(Tin.bonds()[i].qnums().size());
+        BdLeft._impl->force_combineBond_(Tin.bonds()[i]._impl, false);  // no grouping
+      }
+      // std::cout << BdLeft << std::endl;
+      strides.push_back(1);
+      auto BdRight = Tin.bonds()[Tin.rowrank()].clone();
+      for (int i = Tin.rowrank() + 1; i < Tin.rank(); i++) {
+        strides.push_back(Tin.bonds()[i].qnums().size());
+        BdRight._impl->force_combineBond_(Tin.bonds()[i]._impl, false);  // no grouping
+      }
+      strides.push_back(1);
+      // std::cout << BdRight << std::endl;
+      // std::cout << strides << std::endl;
+
+      // 2) making new inner_to_outer_idx lists for each block:
+      // -> a. get stride:
+	  std::cout << "=============step 2==============" << std::endl;
+      for (int i = Tin.rowrank() - 2; i >= 0; i--) {
+        strides[i] *= strides[i + 1];
+      }
+      for (int i = Tin.rank() - 2; i >= Tin.rowrank(); i--) {
+        strides[i] *= strides[i + 1];
+      }
+      // std::cout << strides << std::endl;
+      //  ->b. calc new inner_to_outer_idx!
+      vec2d<cytnx_uint64> new_itoi(Tin.Nblocks(), std::vector<cytnx_uint64>(2));
+
+      int cnt;
+      for (cytnx_uint64 b = 0; b < Tin.Nblocks(); b++) {
+        const std::vector<cytnx_uint64> &tmpv = Tin.get_qindices(b);
+        for (cnt = 0; cnt < Tin.rowrank(); cnt++) {
+          new_itoi[b][0] += tmpv[cnt] * strides[cnt];
+        }
+        for (cnt = Tin.rowrank(); cnt < Tin.rank(); cnt++) {
+          new_itoi[b][1] += tmpv[cnt] * strides[cnt];
+        }
+      }
+      // std::cout << new_itoi <<  std::endl;
+
+      // 3) categorize:
+      // key = qnum, val = list of block locations:
+	  std::cout << "=============step 3==============" << std::endl;
+      std::map<std::vector<cytnx_int64>, std::vector<cytnx_int64>> mgrp;
+      for (cytnx_uint64 b = 0; b < Tin.Nblocks(); b++) {
+        mgrp[BdLeft.qnums()[new_itoi[b][0]]].push_back(b);
+      }
+
+      // 4) for each qcharge in key, combining the blocks into a big chunk!
+      // ->a initialize an empty shell of UniTensor!
+	  std::cout << "=============step 4==============" << std::endl;
+      vec2d<cytnx_int64> aux_qnums;  // for sharing bond
+      std::vector<cytnx_uint64> aux_degs;  // forsharing bond
+      std::vector<Tensor> S_blocks;
+
+      vec2d<cytnx_uint64> U_itoi;  // for U
+      std::vector<Tensor> U_blocks;
+
+      vec2d<cytnx_uint64> vT_itoi;  // for vT
+      std::vector<Tensor> vT_blocks;
+
+      int tr;
+      // process S:
+	  std::cout << "=============step 6==============" << std::endl;
+      Bond Bd_aux = Bond(BD_IN, aux_qnums, aux_degs, Tin.syms());
+      BlockUniTensor *S_ptr = new BlockUniTensor();
+      S_ptr->Init({Bd_aux, Bd_aux.redirect()}, {"_aux_L", "_aux_R"}, 1, Type.Double,
+                  Device.cpu,  // this two will be overwrite later, so doesnt matter.
+                  true,  // is_diag!
+                  true);  // no_alloc!
+      S_ptr->_blocks = S_blocks;
+      UniTensor S;
+      S._impl = boost::intrusive_ptr<UniTensor_base>(S_ptr);
+
+      outCyT.push_back(S);
+
+      if (compute_uv) {
+        BlockUniTensor *U_ptr = new BlockUniTensor();
+        for (int i = 0; i < Tin.rowrank(); i++) {
+          U_ptr->_bonds.push_back(Tin.bonds()[i].clone());
+          U_ptr->_labels.push_back(Tin.labels()[i]);
+        }
+        U_ptr->_bonds.push_back(Bd_aux.redirect());
+        U_ptr->_labels.push_back("_aux_L");
+        U_ptr->_rowrank = Tin.rowrank();
+        U_ptr->_is_diag = false;
+        U_ptr->_is_braket_form = U_ptr->_update_braket();
+        U_ptr->_inner_to_outer_idx = U_itoi;
+        U_ptr->_blocks = U_blocks;
+        UniTensor U;
+        U._impl = boost::intrusive_ptr<UniTensor_base>(U_ptr);
+        outCyT.push_back(U);
+      }
+
+      if (compute_uv) {
+        BlockUniTensor *vT_ptr = new BlockUniTensor();
+        vT_ptr->_bonds.push_back(Bd_aux);
+        vT_ptr->_labels.push_back("_aux_R");
+
+        for (int i = Tin.rowrank(); i < Tin.rank(); i++) {
+          vT_ptr->_bonds.push_back(Tin.bonds()[i].clone());
+          vT_ptr->_labels.push_back(Tin.labels()[i]);
+        }
+        vT_ptr->_rowrank = 1;
+        vT_ptr->_is_diag = false;
+        vT_ptr->_is_braket_form = vT_ptr->_update_braket();
+        vT_ptr->_inner_to_outer_idx = vT_itoi;
+        vT_ptr->_blocks = vT_blocks;
+        UniTensor vT;
+        vT._impl = boost::intrusive_ptr<UniTensor_base>(vT_ptr);
+        outCyT.push_back(vT);
+      }
+	  std::cout << "end block" << std::endl;
 
     }  // _svd_Block_UT
 
