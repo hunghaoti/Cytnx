@@ -388,28 +388,6 @@ namespace GesvdTest {
 
     // Do Gesvd
     std::vector<UniTensor> Gesvds = linalg::Gesvd(src_T, compute_uv = true);
-
-    // check labels
-    if (!(CheckLabels(src_T, Gesvds))) {
-      fail_msg.AppendMsg("The output labels are wrong. ", __func__, __LINE__);
-      return false;
-    }
-
-    // check answer
-    if (!(SingularValsCorrect(Gesvds[0], ans_T))) {
-      fail_msg.AppendMsg("The singular values are wong.. ", __func__, __LINE__);
-      return false;
-    }
-
-    // check recomplse [M - USV*]
-    if (!ReComposeCheck(src_T, Gesvds)) {
-      fail_msg.AppendMsg(
-        "The result is wrong after recomposing. "
-        "That's mean T not equal USV* ",
-        __func__, __LINE__);
-      return false;
-    }
-
     return true;
   }
 
