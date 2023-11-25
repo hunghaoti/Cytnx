@@ -49,8 +49,14 @@ jobs:
 
     - name: Run CTest
       shell: bash -l {0}
+      working-directory: ${{github.workspace}}/build/tests
+      run: ./test_main --gtest_filter=*Svd\.U1_sym*
+
+    - name: Run Test2
+      shell: bash -l {0}
       working-directory: ${{github.workspace}}/build
       run: GTEST_COLOR=1 ctest -R "Svd.U1_sym" --output-junit junit.xml
+
 
     - name: Run gcovr
       shell: bash -l {0}
