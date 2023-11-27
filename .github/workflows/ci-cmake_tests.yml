@@ -35,6 +35,10 @@ jobs:
     - name: Build
       working-directory: ${{github.workspace}}/build
       run: $CONDA/bin/cmake --build . -j `nproc`
+
+    - name: Run CTest2
+      working-directory: ${{github.workspace}}/build/tests
+      run: /test_main --gtest_filter=*Svd\.Con*
     
     - name: Run CTest
       working-directory: ${{github.workspace}}/build
