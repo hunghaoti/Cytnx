@@ -294,7 +294,7 @@ namespace cytnx {
         auto out = linalg::Svd(BTen, compute_uv);
         aux_degs.push_back(out[0].shape()[0]);
         S_blocks.push_back(out[0]);
-        tr = 1;
+        tr = 0;
 
         if (compute_uv) {
           // std::cout << row_szs << std::endl;
