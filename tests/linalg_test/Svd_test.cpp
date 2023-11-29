@@ -121,13 +121,19 @@ namespace SvdTest {
 	auto dtype = Type.Double;
     auto UT1 = UniTensor(bonds, {"a", "b"}, row_rank, dtype, Device.cpu, false);
     auto UT2 = UniTensor(bonds, {"b", "c"}, row_rank, dtype, Device.cpu, true);
-    auto UT3 = UniTensor(bonds, {"c", "d"}, row_rank, dtype, Device.cpu, false);
+    auto UT3 = UniTensor(bonds, {"b", "c"}, row_rank, dtype, Device.cpu, false);
 	UT1.uniform_(-1, 1);
-	UT2.uniform_(-1, 1);
-	UT3.uniform_(-1, 1);
-	auto UT = Contract(UT1, UT2);
-	UT = Contract(UT, UT3);
-	UT.print_diagram();
+    auto svds = linalg::Svd(UT1);
+    const UniTensor& S = svds[0];
+    const UniTensor& U = svds[1];
+    const UniTensor& V = svds[2];
+    UniTensor ReCompose = Contract(U, S);
+    ReCompose = Contract(ReCompose, V);
+	auto tmp = ReCompose;
+	for(int i = 0; i < 10; ++i) {
+	  tmp = Contract(tmp, UT3);
+	  tmp.relabels_({"a", "b"});
+	}
   }
 
   /*=====test info=====
