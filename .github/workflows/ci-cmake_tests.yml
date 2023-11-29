@@ -38,7 +38,7 @@ jobs:
 
     - name: Run CTest2
       working-directory: ${{github.workspace}}/build/tests
-      run: /test_main --gtest_filter=*Svd\.Con*
+      run: /test_main 
     
     - name: Run CTest
       working-directory: ${{github.workspace}}/build
