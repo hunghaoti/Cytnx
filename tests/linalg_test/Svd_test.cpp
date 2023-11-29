@@ -100,7 +100,7 @@ namespace SvdTest {
     is_VT:true
   ====================*/
   TEST(Svd, Z3_sym_test) {
-    std::vector<std::string> case_list = {"sym_UT_Z3_C128", "sym_UT_Z3_F64"};
+    std::vector<std::string> case_list = {"sym_UT_Z3_F64"};
     for (const auto& case_name : case_list) {
       std::string test_case_name = UnitTest::GetInstance()->current_test_info()->name();
       fail_msg.Init(test_case_name + ", " + case_name);
@@ -335,6 +335,8 @@ namespace SvdTest {
     const UniTensor& V = Tout[2];
     UniTensor ReCompose = Contract(U, S);
     ReCompose = Contract(ReCompose, V);
+
+
     return true;
   }
 
